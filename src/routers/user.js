@@ -1,16 +1,17 @@
 const express = require('express')
 const User = require('../models/user')
 const router = new express.Router()
-
-router.get('/test', (req, res) => {
-    res.send('From a new file')
-})
+const jwt = require('jsonwebtoken')
 
 
 router.post('/users', async (req, res) => {
 	const user = new User(req.body)
-
+    
     try {
+        await user.save()
+        // const token = await User.generateAuthToken()
+        const token = jwt.sign({ _id: user._id }, 'thisismynewcourse')
+        user.tokens = user.tokens.concat({ token })
         await user.save()
         res.status(201).send(user)
     } catch (e) {
@@ -18,6 +19,21 @@ router.post('/users', async (req, res) => {
     }
 
 });
+
+router.post('/users/login', async (req, res) => {
+    try {
+        const user = await User.findByCredentials(req.body.email, req.body.password)
+        // const token = await User.generateAuthToken()
+        const token = jwt.sign({ _id: user._id }, 'thisismynewcourse')
+        user.tokens = user.tokens.concat({ token })
+        await user.save()
+
+        res.send({user, token})
+        // res.status(200).send(user)
+    } catch (e) {
+        res.status(400).send(e)
+    }
+})
 
 router.get('/users', async (req, res) => {
 
